@@ -29,15 +29,26 @@ namespace ffmpeg_parse {
         }
     };
 
-    struct parse_result {
-        struct graph {
-            std::unordered_map<std::string, std::size_t> index_by_name = {{"Input", 0}};
-            std::vector<std::string> names = {"Input"};
-            std::vector<std::pair<int, int>> edges;
-        } graph;
+    struct edge {
+        bool operator==(const edge &rhs) const;
 
-        std::vector<std::pair<std::string, std::string>> outputs;
-        std::vector<std::string> input_names;
+        bool operator!=(const edge &rhs) const;
+
+        std::size_t from, to;
+        std::string label;
+    };
+
+    struct graph {
+        std::unordered_map<std::string, std::size_t> index_by_name;
+        std::vector<std::string> names;
+        std::vector<int> vertex_type;
+        std::vector<edge> edges;
+    };
+
+    struct parse_result {
+        graph graph;
+//        std::vector<std::pair<std::string, std::string>> outputs;
+        std::size_t input_amount;
     };
 
     int parse_to_graph(std::string &command, parse_result &result);
@@ -54,16 +65,25 @@ namespace ffmpeg_parse {
     struct expected_quote : std::runtime_error {
         explicit expected_quote(std::size_t error_pos);
     };
+
     struct no_closed_paren : std::runtime_error {
         explicit no_closed_paren(std::size_t error_pos);
     };
 
-    struct unexpected_end_of_command : std::runtime_error{
+    struct unexpected_end_of_command : std::runtime_error {
         explicit unexpected_end_of_command();
     };
 
-    struct unexpected_char_after_filter : std::runtime_error{
+    struct unexpected_char_after_filter : std::runtime_error {
         explicit unexpected_char_after_filter(std::size_t error_pos);
+    };
+
+    struct empty_name : std::runtime_error {
+        explicit empty_name(std::size_t error_pos);
+    };
+
+    struct incorrect_reference : std::runtime_error {
+        explicit incorrect_reference(std::size_t error_pos);
     };
 }
 

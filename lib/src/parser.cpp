@@ -33,9 +33,18 @@ namespace ffmpeg_parse {
             std::string null;
             cur_context.pos = pos;
             parse_token(cur_context, null);
-            return true;
+            return cur_context.command.size() <= pos + option.size() ||
+                   isspace(cur_context.command[pos + option.size()]); // check space after option
         }
         return false;
+    }
+
+    void add_vertex(parse_result &result, std::string &name, int type) {
+        if (result.graph.index_by_name.count(name) == 0) {
+            result.graph.index_by_name[name] = result.graph.names.size();
+            result.graph.names.push_back(name);
+            result.graph.vertex_type.push_back(type);
+        }
     }
 
     void parse_input(parse_context &cur_context, parse_result &result) {
@@ -46,8 +55,33 @@ namespace ffmpeg_parse {
                 if (file_name.empty()) {
                     throw expected_filename(cur_context.pos);
                 }
-                result.input_names.push_back(file_name);
+                add_vertex(result, file_name, 0);
+                result.input_amount++;
             }
+        }
+    }
+
+    void parse_reference(parse_context &cur_context, parse_result &result, std::string &reference) {
+        int first_colon_pos = reference.size();
+        for (std::size_t ind = 0; ind < reference.size(); ind++) {
+            if (reference[ind] == ':') {
+                first_colon_pos = ind;
+                break;
+            }
+        }
+        while (reference.size() > first_colon_pos) {
+            reference.pop_back();
+        }
+        int index;
+        try {
+            index = std::stoi(reference);
+            if (index >= result.input_amount) {
+                throw incorrect_reference(cur_context.pos);
+            }
+            reference = result.graph.names.at(index);
+        }
+        catch (...) {
+            throw incorrect_reference(cur_context.pos);
         }
     }
 
@@ -66,10 +100,13 @@ namespace ffmpeg_parse {
                 name += ch;
             } while (ch != ']');
             name.pop_back();
-            if (result.graph.index_by_name.count(name) == 0) {
-                result.graph.index_by_name[name] = result.graph.names.size();
-                result.graph.names.push_back(name);
+            if (name.empty()) {
+                throw empty_name(cur_context.pos);
             }
+            if (isdigit(name[0])) {
+                parse_reference(cur_context, result, name);
+            }
+            add_vertex(result, name, 1);
             id.push_back(result.graph.index_by_name[name]);
             skip_spaces(cur_context);
         }
@@ -77,16 +114,31 @@ namespace ffmpeg_parse {
 
     void parse_filter(parse_context &cur_context, parse_result &result) {
         std::vector<std::size_t> inputs, outputs;
+        std::string command;
         parse_names(cur_context, result, inputs);
         while (cur_context.check_char() != '[' && cur_context.check_char() != ';' && cur_context.check_char() != '\"') {
-            cur_context.get_char();
+            command += cur_context.get_char();
         }
         parse_names(cur_context, result, outputs);
 
-        for (std::size_t from : inputs) {
-            for (std::size_t to : outputs) {
-                result.graph.edges.emplace_back(from, to);
-            }
+
+        add_vertex(result, command, 2);
+        std::size_t command_id = result.graph.index_by_name[command];
+
+        if (inputs.empty()) {
+            // TODO refactor
+            inputs.push_back(0);
+        }
+        if (outputs.empty()) {
+            // TODO
+            // TODO
+        }
+
+        for (std::size_t from: inputs) {
+            result.graph.edges.push_back({from, command_id, ""});
+        }
+        for (std::size_t to: outputs) {
+            result.graph.edges.push_back({command_id, to, ""});
         }
     }
 
@@ -163,4 +215,13 @@ namespace ffmpeg_parse {
             : std::runtime_error(
             "Unexpected character after filter att position " + std::to_string(error_pos) + "\n") {
     }
+
+    empty_name::empty_name(std::size_t error_pos) : std::runtime_error(
+            "Name can't be empty. Error at position " + std::to_string(error_pos) + "\n") {
+    }
+
+    incorrect_reference::incorrect_reference(std::size_t error_pos) : std::runtime_error(
+            "Incorrect reference at position " + std::to_string(error_pos) + "\n") {
+    }
+
 }
