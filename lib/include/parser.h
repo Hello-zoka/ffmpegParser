@@ -49,6 +49,7 @@ namespace ffmpeg_parse {
         graph graph;
 //        std::vector<std::pair<std::string, std::string>> outputs;
         std::size_t input_amount;
+        std::size_t output_amount;
     };
 
     int parse_to_graph(std::string &command, parse_result &result);
@@ -84,6 +85,14 @@ namespace ffmpeg_parse {
 
     struct incorrect_reference : std::runtime_error {
         explicit incorrect_reference(std::size_t error_pos);
+    };
+
+    struct incorrect_output_name : std::runtime_error {
+        explicit incorrect_output_name(std::size_t error_pos);
+    };
+
+    struct expected_stream_name : std::runtime_error {
+        explicit expected_stream_name(std::size_t error_pos);
     };
 }
 
