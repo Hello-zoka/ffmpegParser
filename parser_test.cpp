@@ -95,5 +95,27 @@ TEST_CASE("Edges parse") {
 //    for (auto x : result.graph.edges) {
 //        std::cerr << x.from << " " << x.to << " " << x.label << '\n';
 //    }
+}
+
+TEST_CASE("Mapping") {
+    std::string command;
+    std::vector<std::string> expected_names;
+    std::vector<int> expected_vertex_type;
+    std::vector<ffmpeg_parse::edge> expected_edges;
+    SUBCASE("Hard case") {
+        command = "ffmpeg -i A.avi -i B.mp4 -i C.mkv -filter_complex \"[1:v]hue=s=0,split=2[outv1][outv2];overlay;aresample\"\n"
+                  "        -map [outv1] -an        out1.mp4\n"
+                  "                                  out2.mkv\n"
+                  "        -map [outv2] -map [1:a:0] out3.mkv";
+        expected_names  = {"A.avi", "B.mp4", "C.mkv", "outv1", "outv2","hue=s=0,split=2", "overlay", "aresample", "out1.mp4", "out2.mkv", "out3.mkv"};
+        expected_edges = {{1, 5, ""}, {5, 3, ""}, {5, 4, ""}, {0,  6, ""}, {0,  7, ""}, {3, 9, ""}, {4, 10, ""}, {1, 10, ""}};
+        expected_vertex_type = {0, 0, 0, 1, 1, 2, 2, 2, 3, 3, 3};
+    }
+
+    ffmpeg_parse::parse_result result;
+    ffmpeg_parse::parse_to_graph(command, result);
+    CHECK(result.graph.names == expected_names);
+    CHECK(result.graph.edges == expected_edges);
+    CHECK(result.graph.vertex_type == expected_vertex_type);
 
 }

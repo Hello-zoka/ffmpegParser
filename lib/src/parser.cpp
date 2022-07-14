@@ -222,10 +222,13 @@ namespace ffmpeg_parse {
         std::vector<std::size_t> out_ids;
         while (!cur_context.empty() && token == "-map") {
             parse_token(cur_context, token); // skip -map option
-            std::size_t prev_sz = mapped_id.size();
+            std::size_t prev_sz = mapped_id.size(), prev_vertex_sz = result.graph.names.size();
             parse_names(cur_context, result, mapped_id); // only push back new ids
             if (mapped_id.size() == prev_sz) {
                 throw expected_stream_name(cur_context.pos);
+            }
+            if (result.graph.names.size() != prev_vertex_sz) {
+                throw incorrect_reference(cur_context.pos);
             }
             std::string out_name;
             if (cur_context.empty()) {
@@ -244,16 +247,16 @@ namespace ffmpeg_parse {
                 if (cur_context.empty()) break;
                 check_token(cur_context, token); // to check if -map found
             }
+
             if (!out_ids.empty()) {
                 if (out_ids.size() != 1) {
                     std::cerr << "Hard case. -map option with more than 1 outputs. Using only last one\n";
-
-                    for (std::size_t inp_id: mapped_id) {
-                        result.graph.edges.push_back({inp_id, out_ids.back(), ""});
-                    }
-                    mapped_id.clear();
-                    out_ids.clear();
                 }
+                for (std::size_t inp_id: mapped_id) {
+                    result.graph.edges.push_back({inp_id, out_ids.back(), ""});
+                }
+                mapped_id.clear();
+                out_ids.clear();
             }
         }
     }
