@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    std::string  query, cur_line;
+    std::string query, cur_line;
     while (std::getline(is, cur_line)) {
         query += cur_line + ' ';
     }

@@ -65,19 +65,29 @@ TEST_CASE("Edges parse") {
     std::vector<ffmpeg_parse::edge> expected_edges;
     SUBCASE("Simple") {
         command = "ffmpeg\n"
-        "-copytb 1 -copyts -vsync 0 -i file:///slot/sandbox/nv_tmpfs/j/downloaded_video/input_video_0.mov\n"
-        "-itsoffset 82.0 -i file:///slot/sandbox/nv_tmpfs/j/logo\n"
-        "-filter_complex\n"
-        "\"[0][1]overlay=eof_action=repeat:x=0:y=0[s0];\n"
-        "[s0]select=between(pts\\,983040\\,1080832)[s1]\"";
-        expected_names  = {"file:///slot/sandbox/nv_tmpfs/j/downloaded_video/input_video_0.mov", "file:///slot/sandbox/nv_tmpfs/j/logo", "s0", "overlay=eof_action=repeat:x=0:y=0", "s1", "select=between(pts\\,983040\\,1080832)"};
-        expected_edges = {{0, 3, ""}, {1, 3, ""}, {3, 2, ""}, {2, 5, ""}, {5, 4,  ""}};
+                  "-copytb 1 -copyts -vsync 0 -i file:///slot/sandbox/nv_tmpfs/j/downloaded_video/input_video_0.mov\n"
+                  "-itsoffset 82.0 -i file:///slot/sandbox/nv_tmpfs/j/logo\n"
+                  "-filter_complex\n"
+                  "\"[0][1]overlay=eof_action=repeat:x=0:y=0[s0];\n"
+                  "[s0]select=between(pts\\,983040\\,1080832)[s1]\"";
+        expected_names = {"file:///slot/sandbox/nv_tmpfs/j/downloaded_video/input_video_0.mov",
+                          "file:///slot/sandbox/nv_tmpfs/j/logo", "s0", "overlay=eof_action=repeat:x=0:y=0", "s1",
+                          "select=between(pts\\,983040\\,1080832)"};
+        expected_edges = {{0, 3, ""},
+                          {1, 3, ""},
+                          {3, 2, ""},
+                          {2, 5, ""},
+                          {5, 4, ""}};
         expected_vertex_type = {0, 0, 1, 2, 1, 2};
     }
     SUBCASE("Complicated") {
         command = "ffmpeg -i A.avi -i B.mp4 -i C.mkv -filter_complex \"[1:v]hue=s=0,split=2[outv1][outv2];overlay;aresample\"";
-        expected_names  = {"A.avi", "B.mp4", "C.mkv", "outv1", "outv2", "hue=s=0,split=2", "overlay", "aresample"};
-        expected_edges = {{1, 5, ""}, {5, 3, ""}, {5, 4, ""}, {0,  6, ""}, {0,  7, ""}};
+        expected_names = {"A.avi", "B.mp4", "C.mkv", "outv1", "outv2", "hue=s=0,split=2", "overlay", "aresample"};
+        expected_edges = {{1, 5, ""},
+                          {5, 3, ""},
+                          {5, 4, ""},
+                          {0, 6, ""},
+                          {0, 7, ""}};
         expected_vertex_type = {0, 0, 0, 1, 1, 2, 2, 2};
     }
 
@@ -107,8 +117,16 @@ TEST_CASE("Mapping") {
                   "        -map [outv1] -an        out1.mp4\n"
                   "                                  out2.mkv\n"
                   "        -map [outv2] -map [1:a:0] out3.mkv";
-        expected_names  = {"A.avi", "B.mp4", "C.mkv", "outv1", "outv2","hue=s=0,split=2", "overlay", "aresample", "out1.mp4", "out2.mkv", "out3.mkv"};
-        expected_edges = {{1, 5, ""}, {5, 3, ""}, {5, 4, ""}, {0,  6, ""}, {0,  7, ""}, {3, 9, ""}, {4, 10, ""}, {1, 10, ""}};
+        expected_names = {"A.avi", "B.mp4", "C.mkv", "outv1", "outv2", "hue=s=0,split=2", "overlay", "aresample",
+                          "out1.mp4", "out2.mkv", "out3.mkv"};
+        expected_edges = {{1, 5,  ""},
+                          {5, 3,  ""},
+                          {5, 4,  ""},
+                          {0, 6,  ""},
+                          {0, 7,  ""},
+                          {3, 9,  ""},
+                          {4, 10, ""},
+                          {1, 10, ""}};
         expected_vertex_type = {0, 0, 0, 1, 1, 2, 2, 2, 3, 3, 3};
     }
 
