@@ -43,17 +43,20 @@ namespace ffmpeg_parse {
         std::vector<std::string> names;
         std::vector<int> vertex_type;
         std::vector<edge> edges;
+        std::size_t input_amount = 0;
+        std::size_t output_amount = 0;
     };
 
-    struct parse_result {
-        graph graph;
-//        std::vector<std::pair<std::string, std::string>> outputs;
-        std::size_t input_amount;
-        std::size_t output_amount;
-    };
 
-    int parse_to_graph(std::string &command, parse_result &result);
+    int parse_to_graph(const std::string &command, graph &result);
 
+    void check_graph(const graph &graph);
+
+    std::string convert_graph(const graph &graph);
+
+
+
+    // exceptions
 
     struct unexpected_option_prefix : std::runtime_error {
         explicit unexpected_option_prefix(std::size_t error_pos);
@@ -93,6 +96,15 @@ namespace ffmpeg_parse {
 
     struct expected_stream_name : std::runtime_error {
         explicit expected_stream_name(std::size_t error_pos);
+    };
+
+    struct incorrect_vertex_type : std::runtime_error {
+        explicit incorrect_vertex_type(std::string vertex_name, std::size_t vertex_type);
+    };
+
+
+    struct incorrect_graph : std::runtime_error {
+        explicit incorrect_graph(std::string error_message);
     };
 }
 
