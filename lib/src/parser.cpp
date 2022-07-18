@@ -1,6 +1,7 @@
 #include  "../include/parser.h"
 #include <string>
 #include <iostream>
+#include <set>
 
 namespace ffmpeg_parse {
     void skip_spaces(parse_context &cur_context) {
@@ -125,7 +126,7 @@ namespace ffmpeg_parse {
         std::vector<std::size_t> inputs, outputs;
         std::string command;
         parse_names(cur_context, result, inputs);
-        while (cur_context.check_char() != '[' && cur_context.check_char() != ';' && cur_context.check_char() != '\"') {
+        while (!cur_context.empty() && cur_context.check_char() != '[' && cur_context.check_char() != ';') {
             command += cur_context.get_char();
         }
         parse_names(cur_context, result, outputs);
@@ -151,32 +152,33 @@ namespace ffmpeg_parse {
         }
     }
 
-    void parse_filter_graph(parse_context &cur_context, graph &result) {
-        skip_spaces(cur_context);
-        char ch = 'a', quote = cur_context.get_char();
-        if (quote != '\'' && quote != '\"') { // TODO parse without quotes, using  space as separator
-            throw expected_quote(cur_context.pos);
-        }
-
-        while (ch != '\"') {
-            parse_filter(cur_context, result);
-            if (cur_context.empty()) {
-                throw expected_quote(cur_context.pos);
+    void parse_graph(parse_context &cur_filter, graph &result) {
+        skip_spaces(cur_filter);
+        while (!cur_filter.empty()) {
+            parse_filter(cur_filter, result);
+            if (cur_filter.empty()) {
+                break;
             }
-            ch = cur_context.get_char();
-            switch (ch) {
-                case ';':
-                case '\"':
-                    break;
-                default:
-                    throw unexpected_char_after_filter(cur_context.pos);
+            if (cur_filter.get_char() != ';') {
+                throw unexpected_char_after_filter(cur_filter.pos);
             }
         }
-
     }
 
-    void parse_filter_chain(parse_context &cur_context, graph &result) {
-        // TODO
+
+    void parse_quotes_filter(parse_context &cur_context, std::string &result) {
+        skip_spaces(cur_context);
+        if (cur_context.empty()) return;
+        char sep = ' ', ch;
+        if (cur_context.check_char() == '\"') {
+            sep = '\"';
+            cur_context.get_char();
+        }
+        while (!cur_context.empty()) {
+            ch = cur_context.get_char();
+            if ((sep == ' ' && isspace(ch)) || sep == ch) break;
+            result += ch;
+        }
     }
 
     bool is_out_name(const std::string &name) {
@@ -211,58 +213,67 @@ namespace ffmpeg_parse {
 
     void parse_mapping(parse_context &cur_context, graph &result) {
         std::string token;
-        check_token(cur_context, token);
         std::vector<std::size_t> mapped_id;
-        std::vector<std::size_t> out_ids;
-        while (!cur_context.empty() && token == "-map") {
-            parse_token(cur_context, token); // skip -map option
-            std::size_t prev_sz = mapped_id.size(), prev_vertex_sz = result.names.size();
-            parse_names(cur_context, result, mapped_id); // only push back new ids
-            if (mapped_id.size() == prev_sz) {
-                throw expected_stream_name(cur_context.pos);
-            }
-            if (result.names.size() != prev_vertex_sz) {
-                throw incorrect_reference(cur_context.pos);
-            }
+        int out_id;
+        while (!cur_context.empty()) {
             std::string out_name;
-            if (cur_context.empty()) {
-                throw unexpected_end_of_command();
+            if (parse_output_name(cur_context, out_name)) {
+                result.gl_out_pos.push_back(result.names.size());
+                add_vertex(result, out_name, 4);
+                continue;
             }
-
-            check_token(cur_context, token);
-            while (token != "-map") {
-                if (parse_output_name(cur_context, out_name)) {
-                    add_vertex(result, out_name, 3);  // 3 -- output vertex
-                    result.output_amount++;
-                    out_ids.push_back(result.index_by_name[out_name]);
-                } else { // TODO  parse global options after mapping
-                    parse_token(cur_context, token); // to pass through options
+            parse_token(cur_context, token); // skip option
+            if (token == "-map") {
+                std::size_t prev_sz = mapped_id.size(), prev_vertex_sz = result.names.size();
+                parse_names(cur_context, result, mapped_id); // only push back new ids
+                if (mapped_id.size() == prev_sz) {
+                    throw expected_stream_name(cur_context.pos);
                 }
-                if (cur_context.empty()) break;
-                check_token(cur_context, token); // to check if -map found
-            }
-
-            if (!out_ids.empty()) {
-                if (out_ids.size() != 1) {
-                    std::cerr << "Hard case! '-map' option with more than 1 outputs. Using only last one\n";
+                if (result.names.size() != prev_vertex_sz) {
+                    throw incorrect_reference(cur_context.pos);
                 }
-                for (std::size_t inp_id: mapped_id) {
-                    result.edges.push_back({inp_id, out_ids.back(), ""});
+                if (cur_context.empty()) {
+                    throw unexpected_end_of_command();
                 }
-                mapped_id.clear();
-                out_ids.clear();
+                check_token(cur_context, token);
+                out_id = -1;
+                while (token != "-map") {
+                    if (parse_output_name(cur_context, out_name)) {
+                        add_vertex(result, out_name, 3);  // 3 -- output vertex
+                        result.output_amount++;
+                        out_id = result.index_by_name[out_name];
+                        for (std::size_t inp_id: mapped_id) {
+                            result.edges.push_back({inp_id, static_cast<std::size_t>(out_id), "-map"});
+                        }
+                        mapped_id.clear();
+                        break;
+                    } else {
+                        parse_token(cur_context, token); // to pass through options
+                    }
+                    if (cur_context.empty()) break;
+                    check_token(cur_context, token); // to check if -map found
+                }
             }
         }
     }
 
     int parse_to_graph(const std::string &command, graph &result) {
         parse_context cur_context{command, 0};
+        std::set<std::string> filter_tags = {"-filter_complex", "-vf", "-af", "-sf", "-df"};
         try {
             parse_input(cur_context, result);
-            if (parse_option(cur_context, cur_context.pos, "-filter_complex")) {
-                parse_filter_graph(cur_context, result);
-            } else {  // TODO wtf is going on in other cases?????
-                parse_filter_chain(cur_context, result);
+            std::string filters, token;
+            check_token(cur_context, token);
+            if (filter_tags.find(token) != filter_tags.end()) {
+                parse_token(cur_context, token);
+                parse_quotes_filter(cur_context, filters);
+                parse_context filter_context{filters, 0};
+                parse_graph(filter_context, result);
+                if (token == "-filter_complex") {
+                    result.type = 1;
+                } else {
+                    result.type = 0;
+                }
             }
             parse_mapping(cur_context, result);
         } catch (std::exception &e) {

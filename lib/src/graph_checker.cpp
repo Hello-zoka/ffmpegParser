@@ -23,21 +23,27 @@ namespace ffmpeg_parse {
         }
 
         std::vector<int> used(graph.names.size(), 0);
+        int leafs_cnt = 0;
 
         for (std::size_t inp = 0; inp < graph.input_amount; inp++) {
+            if (graph.vertex_type[inp] == 1 && adj_list[inp].empty()) {
+                leafs_cnt++;
+            }
             if (used[inp] != 0) {
                 throw incorrect_graph("Incoming edges in input vertex");
             }
             dfs(inp, used, adj_list);
         }
-
         for (std::size_t vertex = 0; vertex < graph.names.size(); vertex++) {
             if (used[vertex] == 0) {
                 throw incorrect_graph("Unused vertex with name" + graph.names[vertex]);
             }
             if (adj_list[vertex].size() == 0 && graph.vertex_type[vertex] != 3) {
-                throw incorrect_graph("All graph's leafs has to be output files");
+                throw incorrect_graph("All graph's leafs have to be output files");
             }
+        }
+        if (graph.type == 0 && leafs_cnt > 1) {
+            throw incorrect_graph("Filter chain graph can't have more than 1 leaf");
         }
     }
 }
