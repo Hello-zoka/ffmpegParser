@@ -2,7 +2,7 @@
 //#include "lib/include/parser.h"
 #include  <iostream>
 #include "lib/src/parser.cpp"
-#include "lib/src/graph_checker.cpp"
+#include "lib/src/graph_refactor.cpp"
 #include "lib/src/graph_convert.cpp"
 
 
@@ -246,7 +246,7 @@ TEST_CASE("Graph viz") {
 
     ffmpeg_parse::parse_to_graph(command, result);
     try {
-        ffmpeg_parse::check_graph(result);
+        ffmpeg_parse::refactor_graph(result);
     } catch (std::exception &e) {
         std::cerr << e.what() << '\n';
     }

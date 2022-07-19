@@ -1,5 +1,4 @@
 #include "../include/parser.h"
-#include <iostream>
 
 namespace ffmpeg_parse {
     void dfs(std::size_t vertex, std::vector<int> &used, const std::vector<std::vector<std::size_t>> &adj_list) {
@@ -16,7 +15,7 @@ namespace ffmpeg_parse {
     }
 
 
-    void check_graph(graph &graph) {
+    void refactor_graph(graph &graph) {
         std::vector<std::vector<std::size_t>> adj_list(graph.names.size()); // adjacency list
 
         for (const auto &cur_edg: graph.edges) { // converting to adj list
