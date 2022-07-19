@@ -9,6 +9,8 @@
 
 namespace ffmpeg_parse {
 
+    inline std::unordered_set<std::string> bad_options;
+
     struct parse_context {
         const std::string command;
         std::size_t pos;
