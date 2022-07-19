@@ -2,7 +2,7 @@
 
 namespace ffmpeg_parse {
     std::string convert_graph(const graph &graph) { // converting to graphviz
-        std::string result = "digraph {\n";
+        std::string result = "digraph {\n  rankdir=LR;\n";
         for (std::size_t ind = 0; ind < graph.names.size(); ind++) {
             std::string shape, color = "black";
             switch (graph.vertex_type[ind]) {

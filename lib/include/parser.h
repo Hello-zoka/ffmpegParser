@@ -52,9 +52,10 @@ namespace ffmpeg_parse {
 
     int parse_to_graph(const std::string &command, graph &result);
 
-    void check_graph(const graph &graph);
+    void refactor_graph(graph &graph);
 
     std::string convert_graph(const graph &graph);
+
 
 
 

@@ -238,6 +238,10 @@ TEST_CASE("Graph viz") {
     SUBCASE("Simple") {
         command = "ffmpeg -i A.avi -i B.mp4 out1.mkv out2.wav -map [1:a] -c:a copy out3.mov";
     }
+    SUBCASE("Filter chain") {
+        command = "ffmpeg -i input -vf yadif=0:0:0[middle];[middle]scale=iw/2:-1[out] output.mp4";
+
+    }
     ffmpeg_parse::graph result;
 
     ffmpeg_parse::parse_to_graph(command, result);

@@ -1,4 +1,5 @@
 #include "../include/parser.h"
+#include <iostream>
 
 namespace ffmpeg_parse {
     void dfs(std::size_t vertex, std::vector<int> &used, const std::vector<std::vector<std::size_t>> &adj_list) {
@@ -15,11 +16,31 @@ namespace ffmpeg_parse {
     }
 
 
-    void check_graph(const graph &graph) {
+    void check_graph(graph &graph) {
         std::vector<std::vector<std::size_t>> adj_list(graph.names.size()); // adjacency list
 
         for (const auto &cur_edg: graph.edges) { // converting to adj list
+            if (graph.type == 0 && graph.vertex_type[cur_edg.from] == 2 &&
+                graph.vertex_type[cur_edg.to] == 3) { // mapping banned at filter chain
+                throw incorrect_graph("Mapping of middle files are not allowed at filter chains graph");
+            }
             adj_list[cur_edg.from].push_back(cur_edg.to);
+        }
+        for (const auto &cur_edg: graph.edges) {
+            if (cur_edg.label == "-map" && adj_list[cur_edg.from].size() != 1) {
+                throw incorrect_graph("Mapping not leaf file");
+            }
+        }
+        if (graph.type == 0) {
+            for (std::size_t ind = 0; ind < graph.names.size(); ind++) {
+                if (graph.vertex_type[ind] == 1 && adj_list[ind].size() == 0) {
+                    if (graph.gl_out_pos.empty()) {
+                        throw incorrect_graph("No output output files for filer chain");
+                    }
+                    graph.edges.push_back({ind, graph.gl_out_pos.front(), "auto"});
+                    break;
+                }
+            }
         }
 
         std::vector<int> used(graph.names.size(), 0);
