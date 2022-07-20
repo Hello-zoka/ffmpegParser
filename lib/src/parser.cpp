@@ -80,10 +80,10 @@ namespace ffmpeg_parse {
                 break;
             }
         }
-        while (reference.size() > first_colon_pos) {
+        while (static_cast<int>(reference.size()) > first_colon_pos) {
             reference.pop_back();
         }
-        int index;
+        std::size_t index;
         try {
             index = std::stoi(reference);
             if (index >= result.input_amount) {
