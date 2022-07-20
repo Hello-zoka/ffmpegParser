@@ -4,12 +4,12 @@
 #include <set>
 
 namespace ffmpeg_parse {
+
     void skip_spaces(parse_context &cur_context) {
         while (!cur_context.empty() && isspace(cur_context.command[cur_context.pos])) {
             cur_context.pos++;
         }
     }
-
 
     void parse_token(parse_context &cur_context, std::string &result) {
         skip_spaces(cur_context);
@@ -31,8 +31,8 @@ namespace ffmpeg_parse {
         }
     }
 
-
-    bool parse_option(parse_context &cur_context, std::size_t pos, const std::string option) {
+    bool
+    parse_option(parse_context &cur_context, std::size_t pos, const std::string option) { // checking token at pos index
         skip_spaces(cur_context);
         if (cur_context.command.size() - pos + 1 < option.size()) {
             return false;
@@ -48,6 +48,9 @@ namespace ffmpeg_parse {
     }
 
     void add_vertex(graph &result, std::string &name, int type) {
+        if (type == 2) { // making all filters node different
+            name += " (" + std::to_string(result.names.size()) + ")";
+        }
         if (result.index_by_name.count(name) == 0) {
             result.index_by_name[name] = result.names.size();
             result.names.push_back(name);
@@ -55,7 +58,7 @@ namespace ffmpeg_parse {
         }
     }
 
-    void parse_input(parse_context &cur_context, graph &result) {
+    void parse_inputs(parse_context &cur_context, graph &result) {
         for (std::size_t ind = cur_context.pos; ind < cur_context.command.size(); ind++) {
             if (parse_option(cur_context, ind, "-i")) {
                 std::string file_name, null;
@@ -140,7 +143,6 @@ namespace ffmpeg_parse {
         }
         if (outputs.empty()) {
             // TODO
-            // TODO
         }
 
         for (std::size_t from: inputs) {
@@ -165,7 +167,7 @@ namespace ffmpeg_parse {
     }
 
 
-    void parse_quotes_filter(parse_context &cur_context, std::string &result) {
+    void parse_quotes_filter(parse_context &cur_context, std::string &result) { // parsing filters by separator
         skip_spaces(cur_context);
         if (cur_context.empty()) return;
         char sep = ' ', ch;
@@ -180,7 +182,7 @@ namespace ffmpeg_parse {
         }
     }
 
-    bool is_out_name(const std::string &name) {
+    bool is_out_name(const std::string &name) { // checking '.' in name
         int count_dots = 0;
         for (std::size_t ind = 0; ind < name.size(); ind++) {
             if (name[ind] == '.') {
@@ -197,10 +199,10 @@ namespace ffmpeg_parse {
             parse_token(cur_context, token); // -f flag
             parse_token(cur_context, token); // format option
             parse_token(cur_context, out_name); // out name
-            if  (out_name.empty()) {
+            if (out_name.empty()) {
                 throw incorrect_output_name(cur_context.pos);
             }
-            if (out_name[0] == '-') {
+            if (out_name[0] == '-') { // Hard case, can't parse it correctly
                 std::cerr << "Warning! File name should be just after '-f' option. Found another option\n";
             }
             return true;
@@ -213,7 +215,7 @@ namespace ffmpeg_parse {
         return false;
     }
 
-    void relax_bad_flag(bool &prev_bad, const std::string &token) {
+    void relax_bad_flag(bool &prev_bad, const std::string &token) { // checking if option needs parameter with '.'
         if (bad_options.find(token) != bad_options.end()) {
             prev_bad = true;
         } else {
@@ -246,12 +248,13 @@ namespace ffmpeg_parse {
                 if (result.names.size() != prev_vertex_sz) {
                     throw incorrect_reference(cur_context.pos);
                 }
+
                 if (cur_context.empty()) {
                     throw unexpected_end_of_command();
                 }
                 check_token(cur_context, token);
                 while (token != "-map") {
-                    if (!prev_bad && parse_output_name(cur_context, out_name)) {
+                    if (!prev_bad && parse_output_name(cur_context, out_name)) { // found out file
                         add_vertex(result, out_name, 3);  // 3 -- output vertex
                         result.output_amount++;
                         out_id = result.index_by_name[out_name];
@@ -266,36 +269,30 @@ namespace ffmpeg_parse {
                         relax_bad_flag(prev_bad, token);
                     }
                     if (cur_context.empty()) break;
-                    check_token(cur_context, token); // to check if -map found
+                    check_token(cur_context, token); // to check next option
                 }
             }
         }
     }
 
-    int parse_to_graph(const std::string &command, graph &result) {
+    void parse_to_graph(const std::string &command, graph &result) { // can throw exceptions
         parse_context cur_context{command, 0};
         std::set<std::string> filter_tags = {"-filter_complex", "-vf", "-af", "-sf", "-df"};
-        try {
-            parse_input(cur_context, result);
-            std::string filters, token;
-            check_token(cur_context, token);
-            if (filter_tags.find(token) != filter_tags.end()) {
-                parse_token(cur_context, token);
-                parse_quotes_filter(cur_context, filters);
-                parse_context filter_context{filters, 0};
-                parse_graph(filter_context, result);
-                if (token == "-filter_complex") {
-                    result.type = 1;
-                } else {
-                    result.type = 0;
-                }
+        parse_inputs(cur_context, result);
+        std::string filters, token;
+        check_token(cur_context, token);
+        if (filter_tags.find(token) != filter_tags.end()) {
+            parse_token(cur_context, token);
+            parse_quotes_filter(cur_context, filters);
+            parse_context filter_context{filters, 0};
+            parse_graph(filter_context, result);
+            if (token == "-filter_complex") {
+                result.type = 1;
+            } else {
+                result.type = 0;
             }
-            parse_mapping(cur_context, result);
-        } catch (std::exception &e) {
-            std::cerr << e.what();
-            return 1;
         }
-        return 0;
+        parse_mapping(cur_context, result);
     }
 
 
@@ -305,17 +302,6 @@ namespace ffmpeg_parse {
     expected_filename::expected_filename(std::size_t
                                          error_pos)
             : std::runtime_error("Expected file name after '-i' on position " + std::to_string(error_pos) + "\n") {
-    }
-
-    unexpected_option_prefix::unexpected_option_prefix(std::size_t
-                                                       error_pos)
-            : std::runtime_error("Parsing error at position " + std::to_string(error_pos) +
-                                 ". Expected that '-i' prefix reserved for input file options\n") {
-    }
-
-    expected_quote::expected_quote(std::size_t
-                                   error_pos)
-            : std::runtime_error("Expected quotation mark at position " + std::to_string(error_pos) + "\n") {
     }
 
     no_closed_paren::no_closed_paren(std::size_t

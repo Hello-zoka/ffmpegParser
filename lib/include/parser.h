@@ -52,7 +52,7 @@ namespace ffmpeg_parse {
     };
 
 
-    int parse_to_graph(const std::string &command, graph &result);
+    void parse_to_graph(const std::string &command, graph &result);
 
     void refactor_graph(graph &graph);
 
@@ -63,16 +63,8 @@ namespace ffmpeg_parse {
 
     // exceptions
 
-    struct unexpected_option_prefix : std::runtime_error {
-        explicit unexpected_option_prefix(std::size_t error_pos);
-    };
-
     struct expected_filename : std::runtime_error {
         explicit expected_filename(std::size_t error_pos);
-    };
-
-    struct expected_quote : std::runtime_error {
-        explicit expected_quote(std::size_t error_pos);
     };
 
     struct no_closed_paren : std::runtime_error {

@@ -74,8 +74,8 @@ TEST_CASE("Edges parse") {
                   "\"[0][1]overlay=eof_action=repeat:x=0:y=0[s0];\n"
                   "[s0]select=between(pts\\,983040\\,1080832)[s1]\"";
         expected_names = {"file:///slot/sandbox/nv_tmpfs/j/downloaded_video/input_video_0.mov",
-                          "file:///slot/sandbox/nv_tmpfs/j/logo", "s0", "overlay=eof_action=repeat:x=0:y=0", "s1",
-                          "select=between(pts\\,983040\\,1080832)"};
+                          "file:///slot/sandbox/nv_tmpfs/j/logo", "s0", "overlay=eof_action=repeat:x=0:y=0 (3)", "s1",
+                          "select=between(pts\\,983040\\,1080832) (5)"};
         expected_edges = {{0, 3, ""},
                           {1, 3, ""},
                           {3, 2, ""},
@@ -85,7 +85,8 @@ TEST_CASE("Edges parse") {
     }
     SUBCASE("Complicated") {
         command = "ffmpeg -i A.avi -i B.mp4 -i C.mkv -filter_complex \"[1:v]hue=s=0,split=2[outv1][outv2];overlay;aresample\"";
-        expected_names = {"A.avi", "B.mp4", "C.mkv", "outv1", "outv2", "hue=s=0,split=2", "overlay", "aresample"};
+        expected_names = {"A.avi", "B.mp4", "C.mkv", "outv1", "outv2", "hue=s=0,split=2 (5)", "overlay (6)",
+                          "aresample (7)"};
         expected_edges = {{1, 5, ""},
                           {5, 3, ""},
                           {5, 4, ""},
@@ -95,7 +96,8 @@ TEST_CASE("Edges parse") {
     }
     SUBCASE("Spaces") {
         command = "ffmpeg -i A.avi -i B.mp4 -i C.mkv -filter_complex [1:v]hue=s=0,split=2[outv1][outv2];overlay;aresample";
-        expected_names = {"A.avi", "B.mp4", "C.mkv", "outv1", "outv2", "hue=s=0,split=2", "overlay", "aresample"};
+        expected_names = {"A.avi", "B.mp4", "C.mkv", "outv1", "outv2", "hue=s=0,split=2 (5)", "overlay (6)",
+                          "aresample (7)"};
         expected_edges = {{1, 5, ""},
                           {5, 3, ""},
                           {5, 4, ""},
@@ -109,10 +111,6 @@ TEST_CASE("Edges parse") {
     CHECK(result.names == expected_names);
     CHECK(result.edges == expected_edges);
     CHECK(result.vertex_type == expected_vertex_type);
-//    std::cerr << "Names:\n";
-//    for (auto x: result.names) {
-//        std::cerr << x << '\n';
-//    }
 //
 //    std::cerr << "Edges:\n";
 //    for (auto x: result.edges) {
@@ -127,14 +125,17 @@ TEST_CASE("Filter chain") {
     std::vector<ffmpeg_parse::edge> expected_edges;
     SUBCASE("Simple") {
         command = "ffmpeg -i input -vf scale=iw/2:-1 output.mp4";
-        expected_names = {"input", "scale=iw/2:-1", "output.mp4"};
+        expected_names = {"input", "scale=iw/2:-1 (1)", "output.mp4"};
         expected_edges = {{0, 1, ""}};
         expected_vertex_type = {0, 2, 4};
     }
     SUBCASE("Intermediate files") {
         command = "ffmpeg -i input -vf [in]yadif=0:0:0[middle];[middle]scale=iw/2:-1[out] output.mp4";
-        expected_names = {"input",  "in", "middle", "yadif=0:0:0", "out", "scale=iw/2:-1", "output.mp4"};
-        expected_edges = {{1, 3, ""}, {3, 2, ""}, {2, 5, ""}, {5, 4, ""}};
+        expected_names = {"input", "in", "middle", "yadif=0:0:0 (3)", "out", "scale=iw/2:-1 (5)", "output.mp4"};
+        expected_edges = {{1, 3, ""},
+                          {3, 2, ""},
+                          {2, 5, ""},
+                          {5, 4, ""}};
         expected_vertex_type = {0, 1, 1, 2, 1, 2, 4};
     }
 
@@ -155,7 +156,7 @@ TEST_CASE("Mapping") {
 
     SUBCASE("Simple mapping") {
         command = "ffmpeg -i A.avi -i B.mp4 -i C.mkv -filter_complex \"[1:v]hue=s=0,split=2[outv1][outv2]\" -map [outv1] -an out1.mp4 -map [outv2] out2.mp4";
-        expected_names = {"A.avi", "B.mp4", "C.mkv", "outv1", "outv2", "hue=s=0,split=2",
+        expected_names = {"A.avi", "B.mp4", "C.mkv", "outv1", "outv2", "hue=s=0,split=2 (5)",
                           "out1.mp4", "out2.mp4"};
         expected_edges = {{1, 5, ""},
                           {5, 3, ""},
@@ -171,7 +172,14 @@ TEST_CASE("Mapping") {
         command = "ffmpeg -i A.avi -i B.mp4 -i C.mkv -filter_complex \"[1:v]hue=s=0,split=2[outv1][outv2];overlay;aresample\"\n"
                   "        -map [outv1] -an        out1.mp4\n"
                   "        -map [outv2] -map [1:a:0]";
-        expected_names = {"A.avi", "B.mp4", "C.mkv", "outv1", "outv2", "hue=s=0,split=2", "overlay", "aresample",
+        expected_names = {"A.avi",
+                          "B.mp4",
+                          "C.mkv",
+                          "outv1",
+                          "outv2",
+                          "hue=s=0,split=2 (5)",
+                          "overlay (6)",
+                          "aresample (7)",
                           "out1.mp4"};
         expected_edges = {{1, 5, ""},
                           {5, 3, ""},
@@ -180,7 +188,6 @@ TEST_CASE("Mapping") {
                           {0, 7, ""},
                           {3, 8, "-map"}};
         expected_vertex_type = {0, 0, 0, 1, 1, 2, 2, 2, 3};
-        expected_exit_code = 1;
         expected_input_amount = 3;
         expected_output_amount = 1;
     }
@@ -198,7 +205,8 @@ TEST_CASE("Mapping") {
                       "                                  out2.mkv\n"
                       "        -map [outv2] -map [1:a:0] out3.mkv";
         }
-        expected_names = {"A.avi", "B.mp4", "C.mkv", "outv1", "outv2", "hue=s=0,split=2", "overlay", "aresample",
+        expected_names = {"A.avi", "B.mp4", "C.mkv", "outv1", "outv2", "hue=s=0,split=2 (5)", "overlay (6)",
+                          "aresample (7)",
                           "out1.mp4", "out2.mkv", "out3.mkv"};
         expected_edges = {{1, 5,  ""},
                           {5, 3,  ""},
@@ -214,17 +222,14 @@ TEST_CASE("Mapping") {
     }
 
     ffmpeg_parse::graph result;
-    int exit_code = ffmpeg_parse::parse_to_graph(command, result);
+    try {
+        ffmpeg_parse::parse_to_graph(command, result);
+    } catch (...) {}
     CHECK(result.names == expected_names);
     CHECK(result.edges == expected_edges);
     CHECK(result.vertex_type == expected_vertex_type);
-    CHECK(exit_code == expected_exit_code);
     CHECK(expected_input_amount == result.input_amount);
     CHECK(expected_output_amount == result.output_amount);
-//    std::cerr << "Names:\n";
-//    for (auto x: result.names) {
-//        std::cerr << x << '\n';
-//    }
 }
 
 TEST_CASE("Graph viz") {

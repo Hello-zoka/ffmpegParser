@@ -7,12 +7,13 @@ namespace ffmpeg_parse {
             std::string shape, color = "black";
             switch (graph.vertex_type[ind]) {
                 case 0:
+                    color = "red";
                 case 1:
-                    shape = "circle";
+                    shape = "ellipse";
                     break;
                 case 3:
                 case 4:
-                    shape = "circle";
+                    shape = "ellipse";
                     color = "blue";
                     break;
                 case 2:
@@ -21,10 +22,11 @@ namespace ffmpeg_parse {
                 default:
                     throw incorrect_vertex_type(graph.names[ind], graph.vertex_type[ind]);
             }
-            result += "  \"" + graph.names[ind]+ "\" [shape=" + shape + ", color=" + color + "]\n";
+            result += "  \"" + graph.names[ind] + "\" [shape=" + shape + ", color=" + color + "]\n";
         }
         for (const edge &cur_edg: graph.edges) {
-            result += "  \"" + graph.names[cur_edg.from] + "\" -> \"" + graph.names[cur_edg.to] + "\" [label=\"" + cur_edg.label +
+            result += "  \"" + graph.names[cur_edg.from] + "\" -> \"" + graph.names[cur_edg.to] + "\" [label=\"" +
+                      cur_edg.label +
                       "\"]\n";
         }
         result += "}\n";
