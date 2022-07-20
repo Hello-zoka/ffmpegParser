@@ -53,8 +53,8 @@ int main(int argc, char *argv[]) {
         std::cerr << e.what() << '\n';
     }
 
-    std::freopen("out.txt", "w", stdout);
+//     std::freopen("out.txt", "w", stdout);
     std::cout << ffmpeg_parse::convert_graph(result);
-    fclose(stdout);
+//     fclose(stdout);
     return 0;
 }
