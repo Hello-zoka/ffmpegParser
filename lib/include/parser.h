@@ -57,7 +57,7 @@ namespace ffmpeg_parse {
 
     void refactor_graph(graph &graph);
 
-    std::string convert_graph(const graph &graph);
+    std::string convert_graph(graph &graph);
 
 
 
