@@ -22,6 +22,10 @@ namespace ffmpeg_parse {
                 default:
                     throw incorrect_vertex_type(graph.names[ind], graph.vertex_type[ind]);
             }
+            if (graph.names[ind][0] == '\'' || graph.names[ind][0] ==  '\"') {
+                graph.names[ind].pop_back();
+                graph.names[ind][0] = ' ';
+            }
             result += "  \"" + graph.names[ind] + "\" [shape=" + shape + ", color=" + color + "]\n";
         }
         for (const edge &cur_edg: graph.edges) {
