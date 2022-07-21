@@ -30,15 +30,21 @@ namespace ffmpeg_parse {
                 throw incorrect_graph("Mapping not leaf file");
             }
         }
-        if (graph.type == 0) {
-            for (std::size_t ind = 0; ind < graph.names.size(); ind++) {
-                if (graph.vertex_type[ind] == 1 && adj_list[ind].size() == 0) {
-                    if (graph.gl_out_pos.empty()) {
-                        throw incorrect_graph("No output output files for filer chain");
-                    }
-                    graph.edges.push_back({ind, graph.gl_out_pos.front(), "auto"});
-                    break;
+
+        for (std::size_t ind = 0; ind < graph.names.size(); ind++) { // auto deducting of output
+            if (graph.type == 0 && graph.vertex_type[ind] == 1 && adj_list[ind].size() == 0) {
+                if (graph.gl_out_pos.empty()) {
+                    throw incorrect_graph("No output files for filter chain");
                 }
+                graph.edges.push_back({ind, graph.gl_out_pos.front(), "auto"});
+                break;
+            }
+            if (graph.type == 1 && graph.vertex_type[ind] == 2 && adj_list[ind].size() == 0) {
+                if (graph.gl_out_pos.empty()) {
+                    throw incorrect_graph("No output files for one of filters");
+                }
+                graph.edges.push_back({ind, graph.gl_out_pos.front(), "auto"});
+                break;
             }
         }
 
