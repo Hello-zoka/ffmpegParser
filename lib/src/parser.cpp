@@ -1,6 +1,7 @@
 #include  "../include/parser.h"
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <set>
 
 namespace ffmpeg_parse {
@@ -66,6 +67,10 @@ namespace ffmpeg_parse {
                 parse_token(cur_context, file_name);
                 if (file_name.empty()) {
                     throw expected_filename(cur_context.pos);
+                }
+                std::ifstream f(file_name.c_str());
+                if (!f.good()) {
+                    std::cerr << "Can't find such file as " + file_name << '\n';
                 }
                 add_vertex(result, file_name, 0);
                 result.input_amount++;
@@ -202,7 +207,6 @@ namespace ffmpeg_parse {
             if (out_name[0] == '-' && out_name.size() != 1) { // Hard case, can't parse it correctly
                 std::cerr << "Warning! File name should be just after '-f' option. Found another option\n";
             }
-            // TODO check file existence
             return true;
         }
         return false;
