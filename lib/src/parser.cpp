@@ -204,28 +204,44 @@ namespace ffmpeg_parse {
             if (out_name.empty()) {
                 throw incorrect_output_name(cur_context.pos);
             }
-            if (out_name[0] == '-' && out_name.size() != 1) { // Hard case, can't parse it correctly
+            if (out_name[0] == '-' && out_name.size() != 1) {
                 std::cerr << "Warning! File name should be just after '-f' option. Found another option\n";
             }
             return true;
         }
+        if (is_out_name(token)) {
+            parse_token(cur_context, token);
+            out_name = token;
+            return true;
+        }
         return false;
+    }
+
+    void relax_bad_flag(bool &prev_bad, const std::string &token) { // checking if option needs parameter with '.'
+        if (bad_options.find(token) != bad_options.end() && dot_parsing) {
+            prev_bad = true;
+        } else {
+            prev_bad = false;
+        }
     }
 
     void parse_mapping(parse_context &cur_context, graph &result) {
         std::string token;
         std::vector<std::size_t> mapped_id;
         int out_id;
+        bool prev_bad = false;
         while (!cur_context.empty()) {
             std::string out_name;
-            if (parse_output_name(cur_context, out_name)) {
+            if (!prev_bad && parse_output_name(cur_context, out_name)) {
                 result.gl_out_pos.push_back(result.names.size());
                 add_vertex(result, out_name, 4);
                 continue;
             }
             parse_token(cur_context, token); // skip option
+            relax_bad_flag(prev_bad, token);
 
             if (token == "-map") {
+                prev_bad = false;
                 std::size_t prev_sz = mapped_id.size(), prev_vertex_sz = result.names.size();
                 parse_names(cur_context, result, mapped_id); // only push back new ids
                 if (mapped_id.size() == prev_sz) {
@@ -240,7 +256,7 @@ namespace ffmpeg_parse {
                 }
                 check_token(cur_context, token);
                 while (token != "-map") {
-                    if (parse_output_name(cur_context, out_name)) { // found out file
+                    if (!prev_bad && parse_output_name(cur_context, out_name)) { // found out file
                         add_vertex(result, out_name, 3);  // 3 -- output vertex
                         result.output_amount++;
                         out_id = result.index_by_name[out_name];
@@ -248,9 +264,11 @@ namespace ffmpeg_parse {
                             result.edges.push_back({inp_id, static_cast<std::size_t>(out_id), "-map"});
                         }
                         mapped_id.clear();
+                        prev_bad = false;
                         break;
                     } else {
                         parse_token(cur_context, token); // to pass through options
+                        relax_bad_flag(prev_bad, token);
                     }
                     if (cur_context.empty()) break;
                     check_token(cur_context, token); // to check next option

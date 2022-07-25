@@ -11,6 +11,7 @@
 namespace ffmpeg_parse {
 
     inline std::unordered_set<std::string> bad_options;
+    inline bool dot_parsing;
 
     struct parse_context {
         const std::string command;

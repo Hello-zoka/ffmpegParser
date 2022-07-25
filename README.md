@@ -6,11 +6,11 @@ This tool was created to simplify process of debugging by visualization of filte
 
 # Restrictions 
 
-1. You have to use -f option for any output files
-
-For example `ffmpeg <inputs> <filters> <output setup #1> -f <format#1> <output#1> <output setup #2> -f <format#2> <output#2> ...`
-
+1. Output files format 
+   1. `-f` option(format: `-f <format> <output>`)
+   2. Filename with `.`. In this case you should set first line of config in `true` state and add all options after which comes word with `.` in config file.
 2. You have to map all outputs(except filter chain case)
+3. All file's names in filter chain/graph should be in format: `[name]`
  
 # How to use
 ## Ffmpeg to graphviz `text`

@@ -5,6 +5,34 @@
 #include <sstream>
 #include "lib/include/parser.h"
 
+void upload_options() {
+    std::filesystem::path bad_options_file("lib/src/bad_parameter_config"); // uploading bad options from file
+    if (!std::filesystem::exists(bad_options_file)) {
+        std::cerr << "No options file\n";
+        return;
+    }
+    std::ifstream options_stream(bad_options_file, std::ios_base::in | std::ios_base::binary);
+    if (options_stream.fail()) {
+        std::cerr << "Unable to open options file\n";
+        return;
+    }
+    std::string cur_line;
+    int cnt = 0;
+    while (std::getline(options_stream, cur_line)) {
+        std::stringstream ss(cur_line); // to allow some comments after option
+        std::string option;
+        ss >> option;
+        if (cnt == 0) {
+            if (option == "true")
+                ffmpeg_parse::dot_parsing = true;
+            else
+                ffmpeg_parse::dot_parsing = false;
+        } else {
+            ffmpeg_parse::bad_options.insert(option);
+        }
+        cnt++;
+    }
+}
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
@@ -27,6 +55,7 @@ int main(int argc, char *argv[]) {
     }
     ffmpeg_parse::graph result;
 
+    upload_options();
 
     ffmpeg_parse::parse_to_graph(query, result);
     ffmpeg_parse::refactor_graph(result);

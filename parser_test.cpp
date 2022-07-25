@@ -124,13 +124,13 @@ TEST_CASE("Filter chain") {
     std::vector<int> expected_vertex_type;
     std::vector<ffmpeg_parse::edge> expected_edges;
     SUBCASE("Simple") {
-        command = "ffmpeg -i input -vf scale=iw/2:-1 -f mp4 output";
-        expected_names = {"input", "scale=iw/2:-1 (1)", "output"};
+        command = "ffmpeg -i input -vf scale=iw/2:-1 output.mp4";
+        expected_names = {"input", "scale=iw/2:-1 (1)", "output.mp4"};
         expected_edges = {{0, 1, ""}};
         expected_vertex_type = {0, 2, 4};
     }
     SUBCASE("Intermediate files") {
-        command = "ffmpeg -i input -vf [in]yadif=0:0:0[middle];[middle]scale=iw/2:-1[out] -f mp4 output.mp4";
+        command = "ffmpeg -i input -vf [in]yadif=0:0:0[middle];[middle]scale=iw/2:-1[out] output.mp4";
         expected_names = {"input", "in", "middle", "yadif=0:0:0 (3)", "out", "scale=iw/2:-1 (5)", "output.mp4"};
         expected_edges = {{1, 3, ""},
                           {3, 2, ""},
@@ -155,7 +155,7 @@ TEST_CASE("Mapping") {
     std::size_t expected_input_amount, expected_output_amount;
 
     SUBCASE("Simple mapping") {
-        command = "ffmpeg -i A.avi -i B.mp4 -i C.mkv -filter_complex \"[1:v]hue=s=0,split=2[outv1][outv2]\" -map [outv1] -an -f mp4 out1.mp4 -map [outv2] -f mp4 out2.mp4";
+        command = "ffmpeg -i A.avi -i B.mp4 -i C.mkv -filter_complex \"[1:v]hue=s=0,split=2[outv1][outv2]\" -map [outv1] -an out1.mp4 -map [outv2] out2.mp4";
         expected_names = {"A.avi", "B.mp4", "C.mkv", "outv1", "outv2", "hue=s=0,split=2 (5)",
                           "out1.mp4", "out2.mp4"};
         expected_edges = {{1, 5, ""},
@@ -170,7 +170,7 @@ TEST_CASE("Mapping") {
 
     SUBCASE("Unexpected end of command") { // Check std::cerr "unexpected end of command"
         command = "ffmpeg -i A.avi -i B.mp4 -i C.mkv -filter_complex \"[1:v]hue=s=0,split=2[outv1][outv2];overlay;aresample\"\n"
-                  "        -map [outv1] -an     -f  ololol out1.mp4\n"
+                  "        -map [outv1] -an        out1.mp4\n"
                   "        -map [outv2] -map [1:a:0]";
         expected_names = {"A.avi",
                           "B.mp4",
@@ -195,15 +195,15 @@ TEST_CASE("Mapping") {
     SUBCASE("Hard case") { // Check std::cerr "Hard case"
         SUBCASE("Quotes") {
             command = "ffmpeg -i A.avi -i B.mp4 -i C.mkv -filter_complex \"[1:v]hue=s=0,split=2[outv1]  [outv2] ;overlay;aresample\"\n"
-                      "        -map [outv1] -an   -f 23     out1.mp4\n"
-                      "                                -f file  out2.mkv\n"
-                      "        -map [outv2] -map [1:a:0] -f mp10 out3.mkv";
+                      "        -map [outv1] -an        out1.mp4\n"
+                      "                                  out2.mkv\n"
+                      "        -map [outv2] -map [1:a:0] out3.mkv";
         }
         SUBCASE("Spaces") {
             command = "ffmpeg -i A.avi -i B.mp4 -i C.mkv -filter_complex [1:v]hue=s=0,split=2[outv1][outv2];overlay;aresample\n" // \n is_space!!
-                      "        -map [outv1] -an -f  mkv  out1.mp4\n"
-                      "                                -f file out2.mkv\n"
-                      "        -map [outv2] -map [1:a:0] -f go out3.mkv";
+                      "        -map [outv1] -an        out1.mp4\n"
+                      "                                  out2.mkv\n"
+                      "        -map [outv2] -map [1:a:0] out3.mkv";
         }
         expected_names = {"A.avi", "B.mp4", "C.mkv", "outv1", "outv2", "hue=s=0,split=2 (5)", "overlay (6)",
                           "aresample (7)",
@@ -236,15 +236,15 @@ TEST_CASE("Graph viz") {
     std::string command;
     SUBCASE("Hard case") {
         command = "ffmpeg -i A.avi -i B.mp4 -i C.mkv -filter_complex \"[1:v]hue=s=0,split=2[outv1][outv2];overlay;aresample\"\n"
-                  "        -map [outv1] -an  -f mp4  out1.mp4\n"
-                  "                           -f mkv  out2.mkv\n"
-                  "        -map [outv2] -map [1:a:0] -f mkv out3.mkv";
+                  "        -map [outv1] -an        out1.mp4\n"
+                  "                                  out2.mkv\n"
+                  "        -map [outv2] -map [1:a:0] out3.mkv";
     }
     SUBCASE("Simple") {
-        command = "ffmpeg -i A.avi -i B.mp4 -f mkv out1.mkv -f wav out2.wav -map [1:a] -c:a copy -f mov out3.mov";
+        command = "ffmpeg -i A.avi -i B.mp4 out1.mkv out2.wav -map [1:a] -c:a copy out3.mov";
     }
     SUBCASE("Filter chain") {
-        command = "ffmpeg -i input -vf yadif=0:0:0[middle];[middle]scale=iw/2:-1[out] -f mp7 output.mp4";
+        command = "ffmpeg -i input -vf yadif=0:0:0[middle];[middle]scale=iw/2:-1[out] output.mp4";
 
     }
     ffmpeg_parse::graph result;
