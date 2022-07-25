@@ -45,6 +45,7 @@ namespace ffmpeg_parse {
         std::unordered_map<std::string, std::size_t> index_by_name;
         std::vector<std::string> names;
         std::vector<int> vertex_type;
+        std::vector<bool> vertex_correctness;
         std::vector<std::size_t> gl_out_pos;
         std::vector<edge> edges;
         std::size_t input_amount = 0;
