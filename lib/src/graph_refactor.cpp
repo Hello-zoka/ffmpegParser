@@ -41,7 +41,7 @@ namespace ffmpeg_parse {
             adj_list[cur_edg.from].push_back(cur_edg.to);
         }
         for (const auto &cur_edg: graph.edges) {
-            if (cur_edg.label == "-map" && adj_list[cur_edg.from].size() != 1) {
+            if (cur_edg.label == "-map" && adj_list[cur_edg.from].size() != 1 && graph.vertex_type[cur_edg.from] != 0) {
                 graph.vertex_correctness[cur_edg.from] = false;
                 graph.vertex_correctness[cur_edg.to] = false;
                 std::cerr << "Mapping not leaf file\n";
