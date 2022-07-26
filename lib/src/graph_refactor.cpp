@@ -20,9 +20,9 @@ void dfs(std::size_t vertex,
             dfs(to, used, adj_list, cycle_found);
             if (cycle_found != 0) {
                 if (used[vertex] == error) {
-                    cycle_found = 2; // end of cycle coloring
+                    cycle_found = 2;  // end of cycle coloring
                 }
-                if (cycle_found == 1) { // inside cycle
+                if (cycle_found == 1) {  // inside cycle
                     used[vertex] = error;
                 }
                 return;
