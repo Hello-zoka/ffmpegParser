@@ -163,7 +163,7 @@ void parse_filter(parse_context &cur_context, graph &result) {
         }
 
         if (cur_context.check_char() == ',' ||
-            cur_context.check_char() == ':') {  // end of option
+            cur_context.check_char() == ':') {  // end of flag
             if (log_file_state) {
                 logs.push_back(result.names.size());
                 add_vertex(result, log_file, mapped_output);

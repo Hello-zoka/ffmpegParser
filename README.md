@@ -18,14 +18,14 @@ This tool was created to simplify process of debugging by visualization of filte
 ## Config file
 
 1. `mode:` you can write `dot_parse` mod to parse output files with `.`
-2. `bad_options:` write all mapping/global options which comes word with `.`(but not output files)
-3. `log_options:` write all filter options which are writing log in file
+2. `bad_options:` write all mapping/global options(use space separator) which comes word with `.`(but not output files)
+3. `log_options:` write all filter options(use space separator) which are writing log in file
 
 ## Ffmpeg to graphviz `text`
 
 Build ffmpegParser(needed files you can see at CmakeLists) and then run
 
-`./ffmpegParser file_with_command.txt`
+`./ffmpegParser file_with_command.txt config.txt`
 
 You will get graphviz formatted output in stdout
 
@@ -39,6 +39,6 @@ You should install graphviz, use
 
 Build ffmpegParser(needed files you can see at CmakeLists) and then run
 
-`./ffmpegParser file_with_command.txt | dot -Tsvg > output.svg`
+`./ffmpegParser file_with_command.txt config.txt | dot -Tsvg > output.svg`
 
 You will get picture `.svg` with graph
