@@ -223,6 +223,41 @@ TEST_CASE("Mapping") {
         expected_output_amount = 2;
     }
 
+    SUBCASE("Logging") {
+        log_options = {"stats_file"};
+        command =
+            "ffmpeg -i A.avi -i B.mp4 -i C.mkv -filter_complex "
+            "[1:v]hue=s=0,split=2[outv1][outv2];stats_file=kek:10,"
+            "stats_file=log,overlay;aresample\n"
+            "        -map [outv1] -an        out1.mp4\n"
+            "                                  out2.mkv\n"
+            "        -map [outv2] -map [1:a:0] out3.mkv";
+        expected_names = {"A.avi",
+                          "B.mp4",
+                          "C.mkv",
+                          "outv1",
+                          "outv2",
+                          "hue=s=0,split=2 (5)",
+                          "kek",
+                          "log",
+                          "stats_file=kek:10,stats_file=log,overlay (8)",
+                          "aresample (9)",
+                          "out1.mp4",
+                          "out2.mkv",
+                          "out3.mkv"};
+        expected_edges = {{1, 5, ""},           {5, 3, ""},
+                          {5, 4, ""},           {8, 6, "stats_file"},
+                          {8, 7, "stats_file"}, {0, 8, ""},
+                          {0, 9, ""},           {3, 10, "-map"},
+                          {4, 12, "-map"},      {1, 12, "-map"}};
+        expected_vertex_type = {
+            input,         input,           input,         middle, middle,
+            filter,        mapped_output,   mapped_output, filter, filter,
+            mapped_output, unlinked_output, mapped_output};
+        expected_input_amount = 3;
+        expected_output_amount = 2;
+    }
+
     graph result;
     try {
         parse_to_graph(command, result);

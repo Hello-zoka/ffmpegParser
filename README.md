@@ -9,12 +9,17 @@ This tool was created to simplify process of debugging by visualization of filte
 
 1. Output files format
     1. `-f` option(format: `-f <format> <output>`)
-    2. Filename with `.`. In this case you should add `dot_parse` and options after which comes word with `.` in config
-       file.
+    2. Filename with `.`. In this case you should add all options after which comes word with `.` in config file.
 2. You have to map all outputs(except filter chain case)
 3. All file's names in filter chain/graph should be in format: `[name]`
 
 # How to use
+
+## Config file
+
+1. `mode:` you can write `dot_parse` mod to parse output files with `.`
+2. `bad_options:` write all mapping/global options which comes word with `.`(but not output files)
+3. `log_options:` write all filter options which are writing log in file
 
 ## Ffmpeg to graphviz `text`
 

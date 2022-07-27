@@ -10,11 +10,11 @@
 
 namespace ffmpeg_parse {
 
-inline std::unordered_set<std::string> bad_options;
+inline std::unordered_set<std::string> bad_options, log_options;
 inline bool dot_parsing;
-inline const std::string file_option = "-f";
-inline const std::string map_option = "-map";
-inline const std::string input_option = "-i";
+inline constexpr char file_option[] = "-f";
+inline constexpr char map_option[] = "-map";
+inline constexpr char input_option[] = "-i";
 inline const std::set<std::string> filter_tags = {"-filter_complex", "-vf",
                                                   "-af", "-sf", "-df"};
 
@@ -22,7 +22,7 @@ struct parse_context {
     const std::string command;
     std::size_t pos;
 
-    bool empty() const {
+    [[nodiscard]] bool empty() const {
         return pos >= command.size();
     }
 
@@ -31,7 +31,7 @@ struct parse_context {
         return command[pos++];
     }
 
-    char check_char() const {
+    [[nodiscard]] char check_char() const {
         assert(!empty());
         return command[pos];
     }

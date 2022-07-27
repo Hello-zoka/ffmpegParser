@@ -1,0 +1,3 @@
+mode: dot_parse
+bad_options: -level -passlogfile
+log_options: stats_file

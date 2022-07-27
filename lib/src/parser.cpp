@@ -36,19 +36,20 @@ void check_token(parse_context &cur_context, std::string &result) {
 
 bool parse_option(parse_context &cur_context,
                   std::size_t pos,
-                  const std::string &option) {  // checking token at pos index
+                  const std::string &option,
+                  bool separated = true) {  // checking token at pos index
     skip_spaces(cur_context);
     if (cur_context.command.size() - pos + 1 < option.size()) {
         return false;
     }
     if (cur_context.command.compare(pos, option.size(), option) == 0) {
         std::string null;
-        cur_context.pos = pos;
-        parse_token(cur_context, null);
-        return cur_context.command.size() <= pos + option.size() ||
-               isspace(
-                   cur_context.command[pos + option.size()]);  // check space
-                                                               // after option
+        cur_context.pos = pos + option.size();
+        return !separated ||
+               cur_context.command.size() <= pos + option.size() ||
+               isspace(cur_context
+                           .command[pos + option.size()]);  // check space after
+                                                            // separated option
     }
     return false;
 }
@@ -141,12 +142,46 @@ void parse_names(parse_context &cur_context,
 }
 
 void parse_filter(parse_context &cur_context, graph &result) {
-    std::vector<std::size_t> inputs, outputs;
-    std::string command;
+    std::vector<std::size_t> inputs, outputs, logs;
+    std::vector<std::string> logs_label;
+    std::string command, log_file, log_file_option;
+    bool log_file_state = false;
     parse_names(cur_context, result, inputs);
     while (!cur_context.empty() && cur_context.check_char() != '[' &&
            cur_context.check_char() != ';') {
+        for (auto &log_option : log_options) {
+            if (parse_option(cur_context, cur_context.pos, log_option + '=',
+                             false)) {
+                log_file_state = true;
+                log_file_option = log_option;
+                command += log_option + '=';
+            }
+        }
+        if (cur_context.empty()) {  // after success option parse should be more
+                                    // than 0 chars
+            throw unexpected_end_of_command();
+        }
+
+        if (cur_context.check_char() == ',' ||
+            cur_context.check_char() == ':') {  // end of option
+            if (log_file_state) {
+                logs.push_back(result.names.size());
+                add_vertex(result, log_file, mapped_output);
+                logs_label.push_back(log_file_option);
+            }
+            log_file_state = false;
+            log_file_option = "";
+            log_file = "";
+        }
+        if (log_file_state) {
+            log_file += cur_context.check_char();
+        }
         command += cur_context.get_char();
+    }
+    if (log_file_state) {
+        logs.push_back(result.names.size());
+        add_vertex(result, log_file, mapped_output);
+        logs_label.push_back(log_file_option);
     }
     parse_names(cur_context, result, outputs);
 
@@ -155,6 +190,10 @@ void parse_filter(parse_context &cur_context, graph &result) {
 
     if (inputs.empty()) {  // You can add here some more complicated logic
         inputs.push_back(0);
+    }
+
+    for (std::size_t ind = 0; ind < logs.size(); ind++) {
+        result.edges.push_back({command_id, logs[ind], logs_label[ind]});
     }
 
     for (std::size_t from : inputs) {
