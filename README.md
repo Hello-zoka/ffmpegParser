@@ -42,3 +42,4 @@ Build ffmpegParser(needed files you can see at CmakeLists) and then run
 `./ffmpegParser file_with_command.txt config.txt | dot -Tsvg > output.svg`
 
 You will get picture `.svg` with graph
+
